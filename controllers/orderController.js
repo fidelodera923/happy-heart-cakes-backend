@@ -1,4 +1,5 @@
 const Order = require('../models/Order');
+const { sendAdminOrderSms } = require('../utils/sms');
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -46,6 +47,9 @@ exports.createOrder = async (req, res) => {
       status: 'Pending'
     });
 
+    // Notify admin by SMS (order still succeeds if SMS fails)
+    sendAdminOrderSms(order).catch(() => {});
+
     res.status(201).json(order);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -69,7 +73,9 @@ exports.getMyOrders = async (req, res) => {
 // @access  Private/Admin
 exports.getAllOrders = async (req, res) => {
   try {
-    const orders = await Order.find({}).populate('user', 'name email').sort({ createdAt: -1 });
+    const orders = await Order.find({})
+      .populate('user', 'name email')
+      .sort({ createdAt: -1 });
     res.json(orders);
   } catch (error) {
     res.status(500).json({ message: error.message });
